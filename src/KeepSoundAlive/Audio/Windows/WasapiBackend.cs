@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using NAudio.CoreAudioApi;
+using NAudio.CoreAudioApi.Interfaces;
 using NAudio.Wave;
 
 namespace KeepSoundAlive.Audio.Windows;
@@ -58,6 +59,39 @@ internal sealed class WasapiBackend : IAudioBackend
             device.Dispose();
             throw;
         }
+    }
+
+    public bool IsOtherAudioPlaying(string? deviceId)
+    {
+        var ownProcess = (uint)Environment.ProcessId;
+        MMDevice? device;
+        if (deviceId is not null)
+        {
+            device = Enumerator.GetDevice(deviceId);
+        }
+        else if (!Enumerator.TryGetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia, out device) || device is null)
+        {
+            return false;
+        }
+
+        using (device)
+        using (var manager = device.AudioSessionManager)
+        using (var sessions = manager.Sessions)
+        {
+            for (var i = 0; i < sessions.Count; i++)
+            {
+                using var session = sessions[i];
+                // An open but silent stream (a paused video, for example) doesn't count: only actual sound does.
+                if (session.GetProcessID != ownProcess &&
+                    session.State == AudioSessionState.AudioSessionStateActive &&
+                    session.AudioMeterInformation.MasterPeakValue > 0.0001f)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public void Dispose()

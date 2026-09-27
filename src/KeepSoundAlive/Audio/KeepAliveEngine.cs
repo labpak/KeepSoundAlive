@@ -32,6 +32,8 @@ public sealed class KeepAliveEngine : IDisposable
     private bool _paused;
     private string? _deviceId;
     private bool _disposed;
+    private bool _trackOtherAudio;
+    private long _lastOtherAudio = -1; // Environment.TickCount64 value; -1 = never
 
     // Control thread only.
     private IAudioOutput? _output;
@@ -62,20 +64,40 @@ public sealed class KeepAliveEngine : IDisposable
     public bool Enabled
     {
         get { lock (_gate) return _enabled; }
-        set => Update(() => _enabled = value);
+        set => Update(ref _enabled, value);
     }
 
     public bool Paused
     {
         get { lock (_gate) return _paused; }
-        set => Update(() => _paused = value);
+        set => Update(ref _paused, value);
     }
 
     /// <summary>Device to keep alive; null means the system default device.</summary>
     public string? DeviceId
     {
         get { lock (_gate) return _deviceId; }
-        set => Update(() => _deviceId = value);
+        set => Update(ref _deviceId, value);
+    }
+
+    /// <summary>
+    /// When set, the control thread keeps checking whether other programs play sound on the device
+    /// (see <see cref="TimeSinceOtherAudio"/>). Only needed for the pause-when-idle feature.
+    /// </summary>
+    public bool TrackOtherAudio
+    {
+        get => Volatile.Read(ref _trackOtherAudio);
+        set => Volatile.Write(ref _trackOtherAudio, value);
+    }
+
+    /// <summary>How long ago another program last played sound on the device (<see cref="TimeSpan.MaxValue"/> = never).</summary>
+    public TimeSpan TimeSinceOtherAudio
+    {
+        get
+        {
+            var last = Interlocked.Read(ref _lastOtherAudio);
+            return last < 0 ? TimeSpan.MaxValue : TimeSpan.FromMilliseconds(Environment.TickCount64 - last);
+        }
     }
 
     /// <summary>Lists output devices. Runs on the control thread; safe to call from any thread.</summary>
@@ -101,11 +123,18 @@ public sealed class KeepAliveEngine : IDisposable
         return tcs.Task;
     }
 
-    private void Update(Action change)
+    private void Update<T>(ref T field, T value)
     {
         lock (_gate)
         {
-            change();
+            // Callers may re-apply the same value often (the idle check runs every second); only a real change
+            // should wake the control thread and cut short a pending retry delay.
+            if (EqualityComparer<T>.Default.Equals(field, value))
+            {
+                return;
+            }
+
+            field = value;
             Interlocked.Exchange(ref _nextAttempt, 0);
         }
 
@@ -152,6 +181,26 @@ public sealed class KeepAliveEngine : IDisposable
                 ScheduleRetry();
                 Publish(new EngineStatus(EngineState.Error, Message: ex.Message));
             }
+
+            if (enabled && TrackOtherAudio)
+            {
+                CheckOtherAudio(deviceId);
+            }
+        }
+    }
+
+    private void CheckOtherAudio(string? deviceId)
+    {
+        try
+        {
+            if (_backend.IsOtherAudioPlaying(deviceId))
+            {
+                Interlocked.Exchange(ref _lastOtherAudio, Environment.TickCount64);
+            }
+        }
+        catch
+        {
+            // Purely advisory: if the check fails, the pause simply relies on user input alone.
         }
     }
 
@@ -219,8 +268,10 @@ public sealed class KeepAliveEngine : IDisposable
 
     private void ScheduleRetry()
     {
+        // 1, 2, 4, 5, 5... seconds. Kept short: the device may be back (e.g. an exclusive-mode app released it)
+        // and speakers can fall asleep within seconds, so a long back-off would bring the original problem back.
         _failures++;
-        var delay = TimeSpan.FromSeconds(Math.Min(30, Math.Pow(2, _failures - 1)));
+        var delay = TimeSpan.FromSeconds(Math.Min(5, Math.Pow(2, _failures - 1)));
         Interlocked.Exchange(ref _nextAttempt, Environment.TickCount64 + (long)delay.TotalMilliseconds);
     }
 

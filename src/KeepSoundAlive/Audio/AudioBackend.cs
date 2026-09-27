@@ -19,6 +19,12 @@ public interface IAudioBackend : IDisposable
 
     /// <summary>Opens a stream and starts playing the signal. <paramref name="deviceId"/> null means the default device.</summary>
     IAudioOutput Open(string? deviceId, SignalSource source);
+
+    /// <summary>
+    /// Whether another program is producing sound on the device right now. Used by the Windows-only
+    /// pause-when-idle feature; other backends don't need it.
+    /// </summary>
+    bool IsOtherAudioPlaying(string? deviceId) => false;
 }
 
 public interface IAudioOutput : IDisposable

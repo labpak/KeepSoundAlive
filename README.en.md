@@ -77,6 +77,9 @@ app again to bring its window back.
 - Raise the **Level** by 5–10 dB.
 - Try another **Signal**: "Quiet noise", or "Ultrasound" for wired speakers.
 - If it's the HDMI or USB audio that sleeps rather than the speakers, the "Silence" mode is enough.
+- If the speakers fall asleep only after the computer has been unused for a while, that's the pause that lets
+  Windows sleep: the signal stops after N minutes with neither mouse/keyboard input nor sound from other apps.
+  Increase the time or untick "Pause after … min of inactivity".
 
 ## Uninstall
 

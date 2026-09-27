@@ -427,10 +427,24 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// An open audio stream keeps Windows from sleeping, so the signal pauses once the computer is really unused:
+    /// no keyboard/mouse input AND no sound from other programs for the configured time. Sound counts as activity
+    /// because pausing during a long listening session would let the speakers sleep between tracks (and Windows
+    /// can't sleep while that music plays anyway).
+    /// </summary>
     private void UpdateIdlePause()
     {
-        _engine.Paused = UserIdle.IsSupported && _settings.PauseWhenIdle &&
-                         UserIdle.GetIdleTime() >= TimeSpan.FromMinutes(Math.Max(1, _settings.IdleMinutes));
+        var enabled = UserIdle.IsSupported && _settings.PauseWhenIdle;
+        _engine.TrackOtherAudio = enabled;
+        if (!enabled)
+        {
+            _engine.Paused = false;
+            return;
+        }
+
+        var inactive = TimeSpan.FromTicks(Math.Min(UserIdle.GetIdleTime().Ticks, _engine.TimeSinceOtherAudio.Ticks));
+        _engine.Paused = inactive >= TimeSpan.FromMinutes(Math.Max(1, _settings.IdleMinutes));
     }
 
     // ---- Language ----
