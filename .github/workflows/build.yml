@@ -25,12 +25,12 @@ jobs:
           # Windows builds run on Windows: embedding the icon/manifest into the exe requires it.
           - { rid: win-x64,     os: windows-latest, ext: .exe }
           - { rid: win-arm64,   os: windows-latest, ext: .exe }
-          - { rid: linux-x64,   os: ubuntu-latest,  ext: '' }
-          - { rid: linux-arm64, os: ubuntu-latest,  ext: '' }
+          - { rid: linux-x64,   os: ubuntu-24.04,  ext: '' }
+          - { rid: linux-arm64, os: ubuntu-24.04,  ext: '' }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
@@ -74,7 +74,7 @@ jobs:
           Get-Content help.txt
           if ($p.ExitCode -ne 0) { throw "exit code $($p.ExitCode)" }
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: KeepSoundAlive-${{ matrix.rid }}
           path: dist/*
@@ -83,13 +83,13 @@ jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
@@ -103,7 +103,7 @@ jobs:
       - name: Release notes
         run: sed "s/{{TAG}}/${GITHUB_REF_NAME}/g" .github/release-notes.md > release-notes.md
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           name: KeepSoundAlive ${{ github.ref_name }}
           body_path: release-notes.md
