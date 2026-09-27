@@ -131,13 +131,16 @@
       </Border>
 
       <!-- Footer -->
-      <Grid ColumnDefinitions="*,Auto" Opacity="0.6">
-        <TextBlock VerticalAlignment="Center" FontSize="12">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBlock VerticalAlignment="Center" FontSize="12" Opacity="0.6">
           <Run Text="{Binding Version}" />
           <Run Text="·" />
           <Run Text="{Binding BackendName}" />
         </TextBlock>
-        <HyperlinkButton Grid.Column="1" Content="GitHub" NavigateUri="{Binding RepositoryUrl}" FontSize="12" />
+        <Button Grid.Column="1" Content="{Binding UpdateText}" Command="{Binding UpdateCommand}"
+                Classes.accent="{Binding IsUpdateAvailable}" FontSize="12" Padding="10,3" VerticalAlignment="Center" />
+        <HyperlinkButton Grid.Column="2" Content="GitHub" NavigateUri="{Binding RepositoryUrl}" FontSize="12"
+                         Opacity="0.6" Margin="4,0,0,0" />
       </Grid>
     </StackPanel>
   </ScrollViewer>

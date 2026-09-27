@@ -41,6 +41,8 @@ public partial class App : Application
             _engine = new KeepAliveEngine(CreateBackend());
             _viewModel = new MainViewModel(_engine, settings);
             _viewModel.PropertyChanged += OnViewModelChanged;
+            _viewModel.RestartRequested += Exit; // the update helper swaps the file and restarts after we exit
+            _viewModel.OpenUrlRequested += url => _window?.Launcher.LaunchUriAsync(new Uri(url));
 
             AutoStart.RefreshIfEnabled();
             if (OperatingSystem.IsLinux())

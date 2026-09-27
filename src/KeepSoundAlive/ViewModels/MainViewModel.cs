@@ -447,6 +447,88 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _engine.Paused = inactive >= TimeSpan.FromMinutes(Math.Max(1, _settings.IdleMinutes));
     }
 
+    // ---- Updates (only on request: the app never goes online by itself) ----
+
+    public enum UpdateStep
+    {
+        Idle,
+        Checking,
+        UpToDate,
+        Available,
+        Downloading,
+        Failed,
+    }
+
+    private UpdateInfo? _update;
+
+    /// <summary>The update is downloaded and scheduled: the app must exit so it can be applied and restarted.</summary>
+    public event Action? RestartRequested;
+
+    /// <summary>Asks the view to open a web page (used when this build can't update itself).</summary>
+    public event Action<string>? OpenUrlRequested;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UpdateText), nameof(IsUpdateAvailable))]
+    public partial UpdateStep UpdateState { get; private set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UpdateText))]
+    public partial double UpdateProgress { get; private set; }
+
+    public bool IsUpdateAvailable => UpdateState == UpdateStep.Available;
+
+    public string UpdateText => UpdateState switch
+    {
+        UpdateStep.Checking => T.CheckingUpdates,
+        UpdateStep.UpToDate => T.UpToDate,
+        UpdateStep.Available => string.Format(T.UpdateTo, _update?.Tag),
+        UpdateStep.Downloading => string.Format(T.Downloading, (int)(UpdateProgress * 100)),
+        UpdateStep.Failed => T.UpdateFailed,
+        _ => T.CheckUpdates,
+    };
+
+    /// <summary>First click checks for a new version; when one is found, the next click installs it.</summary>
+    [RelayCommand]
+    private async Task UpdateAsync()
+    {
+        if (UpdateState != UpdateStep.Available || _update is null)
+        {
+            UpdateState = UpdateStep.Checking;
+            try
+            {
+                _update = await Updater.CheckAsync(Updater.CurrentVersion);
+                UpdateState = _update is null ? UpdateStep.UpToDate : UpdateStep.Available;
+            }
+            catch
+            {
+                UpdateState = UpdateStep.Failed;
+            }
+
+            return;
+        }
+
+        if (!Updater.CanUpdateInPlace)
+        {
+            OpenUrlRequested?.Invoke(Updater.ReleasesPage);
+            return;
+        }
+
+        UpdateProgress = 0;
+        UpdateState = UpdateStep.Downloading;
+        try
+        {
+            var newFile = await Updater.DownloadAsync(_update, Environment.ProcessPath!,
+                new Progress<double>(p => UpdateProgress = p));
+            Updater.ApplyAfterExit(newFile, Environment.ProcessPath!, restart: true);
+            RestartRequested?.Invoke();
+        }
+        catch
+        {
+            _update = null;
+            UpdateState = UpdateStep.Failed;
+        }
+    }
+
     // ---- Language ----
 
     // Each language is listed under its own name, so these never need translating.
@@ -491,6 +573,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
 
         OnPropertyChanged(nameof(LevelText));
+        OnPropertyChanged(nameof(UpdateText));
         ApplyStatus(_engine.Status);
     }
 

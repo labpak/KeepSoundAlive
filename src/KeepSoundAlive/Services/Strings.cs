@@ -34,6 +34,13 @@ public sealed class Strings
     public required string Minutes { get; init; }
     public required string ShowInMenu { get; init; }
 
+    public required string CheckUpdates { get; init; }
+    public required string CheckingUpdates { get; init; }
+    public required string UpToDate { get; init; }
+    public required string UpdateTo { get; init; }
+    public required string Downloading { get; init; }
+    public required string UpdateFailed { get; init; }
+
     public required string TrayShow { get; init; }
     public required string TrayEnabled { get; init; }
     public required string TrayExit { get; init; }
@@ -66,6 +73,12 @@ public sealed class Strings
         PauseWhenIdle = "Pause after",
         Minutes = "min of inactivity",
         ShowInMenu = "Show in the applications menu",
+        CheckUpdates = "Check for updates",
+        CheckingUpdates = "Checking…",
+        UpToDate = "Up to date",
+        UpdateTo = "Update to {0}",
+        Downloading = "Downloading… {0}%",
+        UpdateFailed = "Failed — try again",
         TrayShow = "Open",
         TrayEnabled = "Enabled",
         TrayExit = "Exit",
@@ -99,6 +112,12 @@ public sealed class Strings
         PauseWhenIdle = "Пауза после",
         Minutes = "мин бездействия",
         ShowInMenu = "Показывать в меню приложений",
+        CheckUpdates = "Проверить обновления",
+        CheckingUpdates = "Проверка…",
+        UpToDate = "Установлена последняя версия",
+        UpdateTo = "Обновить до {0}",
+        Downloading = "Загрузка… {0}%",
+        UpdateFailed = "Ошибка — повторить",
         TrayShow = "Открыть",
         TrayEnabled = "Включено",
         TrayExit = "Выход",

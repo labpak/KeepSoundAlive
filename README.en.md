@@ -72,6 +72,14 @@ Works with PipeWire, PulseAudio and ALSA. On GNOME the tray icon needs the
 [AppIndicator](https://extensions.gnome.org/extension/615/appindicator-support/) extension; without it, start the
 app again to bring its window back.
 
+### Updating
+
+Click **"Check for updates"** at the bottom of the window, then **"Update to …"**. The app downloads the new version,
+verifies its checksum and restarts. It only goes online when you press this button, and only to GitHub.
+
+Version 1.0.0 (it has no button yet) has to be updated manually once: download the new file or run the install
+command again.
+
 ## If the speakers still fall asleep
 
 - Raise the **Level** by 5–10 dB.
@@ -97,6 +105,7 @@ KeepSoundAlive [options]
   --headless       run without a window using the saved settings (servers, SSH); Ctrl+C to stop
   --list-devices   list output devices
   --add-to-menu    (Linux) add to the applications menu
+  --update         download and install the latest version
   --help           help
 ```
 </details>

@@ -20,6 +20,15 @@ public sealed class SingleInstance : IDisposable
 
     public event Action? ActivationRequested;
 
+    /// <summary>Whether a copy (window or --headless) is running for this user.</summary>
+    public static bool IsRunning => Mutex.TryOpenExisting(Id, out var existing) && DisposeAndTrue(existing);
+
+    private static bool DisposeAndTrue(IDisposable d)
+    {
+        d.Dispose();
+        return true;
+    }
+
     /// <summary>Returns null if another instance is already running (after asking it to show itself).</summary>
     public static SingleInstance? TryAcquire()
     {
@@ -75,8 +84,14 @@ public sealed class SingleInstance : IDisposable
     private static string Sanitize(string value) =>
         new(value.Select(c => char.IsAsciiLetterOrDigit(c) ? c : '_').ToArray());
 
+    /// <summary>Releases the lock. Safe to call twice: a self-update releases it early, before exit.</summary>
     public void Dispose()
     {
+        if (_cts.IsCancellationRequested)
+        {
+            return;
+        }
+
         _cts.Cancel();
         try
         {

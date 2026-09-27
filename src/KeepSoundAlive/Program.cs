@@ -17,6 +17,7 @@ internal static partial class Program
           --headless         Run without any UI using the saved settings (for servers / SSH). Ctrl+C to stop.
           --list-devices     Print the available output devices and exit.
           --add-to-menu      Linux: add KeepSoundAlive to the applications menu and exit.
+          --update           Download and install the latest version from GitHub, then exit.
           --help             Show this help.
 
         Settings file: {0}
@@ -30,6 +31,8 @@ internal static partial class Program
     public static int Main(string[] args)
     {
         var options = new HashSet<string>(args.Select(a => a.ToLowerInvariant()));
+
+        Updater.CleanUpLeftovers();
 
         if (options.Overlaps(["--help", "-h", "/?"]))
         {
@@ -55,6 +58,12 @@ internal static partial class Program
         {
             AttachConsole();
             return RunHeadless();
+        }
+
+        if (options.Contains("--update"))
+        {
+            AttachConsole();
+            return RunUpdate();
         }
 
         StartMinimized = options.Contains("--minimized");
@@ -104,6 +113,43 @@ internal static partial class Program
         catch (Exception ex)
         {
             Console.Error.WriteLine(ex.Message);
+            return 1;
+        }
+    }
+
+    private static int RunUpdate()
+    {
+        if (!Updater.CanUpdateInPlace)
+        {
+            Console.Error.WriteLine($"Only the published single-file build can update itself. Download: {Updater.ReleasesPage}");
+            return 1;
+        }
+
+        if (SingleInstance.IsRunning)
+        {
+            Console.Error.WriteLine("KeepSoundAlive is running: exit it first, or use the update button in its window.");
+            return 1;
+        }
+
+        try
+        {
+            Console.WriteLine($"Current version: {Updater.CurrentVersion}");
+            var update = Updater.CheckAsync(Updater.CurrentVersion).GetAwaiter().GetResult();
+            if (update is null)
+            {
+                Console.WriteLine("Already up to date.");
+                return 0;
+            }
+
+            Console.WriteLine($"Downloading {update.Tag} ({update.AssetName}, {update.Size / 1024 / 1024} MB)...");
+            var newFile = Updater.DownloadAsync(update, Environment.ProcessPath!).GetAwaiter().GetResult();
+            Updater.ApplyAfterExit(newFile, Environment.ProcessPath!, restart: false);
+            Console.WriteLine($"Updated to {update.Tag}: the new version replaces this file as soon as this command exits.");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Update failed: {ex.Message}");
             return 1;
         }
     }
