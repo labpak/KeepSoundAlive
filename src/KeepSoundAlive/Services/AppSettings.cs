@@ -34,8 +34,8 @@ public sealed class AppSettings
 
     public bool CloseToTray { get; set; } = true;
 
-    /// <summary>"auto", "en" or "ru".</summary>
-    public string Language { get; set; } = "auto";
+    /// <summary>"en" or "ru".</summary>
+    public string Language { get; set; } = "en";
 
     public double LevelFor(SignalMode mode) => mode switch
     {

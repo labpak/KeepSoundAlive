@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace KeepSoundAlive.Services;
 
 /// <summary>UI texts. One instance per language; the view model swaps the instance when the language changes.</summary>
@@ -106,45 +104,6 @@ public sealed class Strings
         TrayExit = "Выход",
     };
 
-    /// <summary>"ru" or "en"; anything else (the "auto" default) means the system language.</summary>
-    public static Strings For(string? language) => language switch
-    {
-        "ru" => Russian,
-        "en" => English,
-        _ => DetectSystemLanguage() == "ru" ? Russian : English,
-    };
-
-    /// <summary>
-    /// The app runs in invariant globalization mode (no ICU dependency on Linux), so CultureInfo can't be used;
-    /// ask the OS directly instead.
-    /// </summary>
-    public static string DetectSystemLanguage()
-    {
-        try
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                const int langRussian = 0x19;
-                return (GetUserDefaultUILanguage() & 0x3FF) == langRussian ? "ru" : "en";
-            }
-
-            foreach (var name in new[] { "LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG" })
-            {
-                var value = Environment.GetEnvironmentVariable(name);
-                if (!string.IsNullOrEmpty(value))
-                {
-                    return value.StartsWith("ru", StringComparison.OrdinalIgnoreCase) ? "ru" : "en";
-                }
-            }
-        }
-        catch
-        {
-            // Fall through to English.
-        }
-
-        return "en";
-    }
-
-    [DllImport("kernel32.dll")]
-    private static extern ushort GetUserDefaultUILanguage();
+    /// <summary>"ru" gives Russian; anything else (including older "auto" settings) gives English.</summary>
+    public static Strings For(string? language) => language == "ru" ? Russian : English;
 }

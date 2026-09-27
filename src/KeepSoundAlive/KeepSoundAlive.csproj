@@ -18,7 +18,7 @@
     <Description>Keeps speakers and audio devices awake by playing an inaudible signal.</Description>
     <Copyright>labpak</Copyright>
 
-    <!-- No ICU dependency on Linux; the UI language is detected manually (Strings.DetectSystemLanguage). -->
+    <!-- No ICU dependency on Linux (the app has its own EN/RU strings and needs no culture data). -->
     <InvariantGlobalization>true</InvariantGlobalization>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 

@@ -77,6 +77,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _suppress = true;
         LoadSignalSettings();
         SelectedDevice = Devices[^1];
+        SelectedLanguage = Languages.First(l => (string)l.Value == T.Code);
         Enabled = settings.Enabled;
         StartWithSystem = AutoStart.IsEnabled;
         ShowInMenu = OperatingSystem.IsLinux() && LinuxDesktop.IsInMenu;
@@ -432,44 +433,28 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                          UserIdle.GetIdleTime() >= TimeSpan.FromMinutes(Math.Max(1, _settings.IdleMinutes));
     }
 
-    // ---- Language (RU | EN switch; until the user picks one, the system language is used) ----
+    // ---- Language ----
 
-    public bool IsRussian
-    {
-        get => T.Code == "ru";
-        set
-        {
-            if (value)
-            {
-                SetLanguage("ru");
-            }
-        }
-    }
+    // Each language is listed under its own name, so these never need translating.
+    public IReadOnlyList<OptionItem> Languages { get; } =
+    [
+        new("en", "English"),
+        new("ru", "Русский"),
+    ];
 
-    public bool IsEnglish
-    {
-        get => T.Code == "en";
-        set
-        {
-            if (value)
-            {
-                SetLanguage("en");
-            }
-        }
-    }
+    [ObservableProperty]
+    public partial OptionItem? SelectedLanguage { get; set; }
 
-    private void SetLanguage(string code)
+    partial void OnSelectedLanguageChanged(OptionItem? value)
     {
-        if (T.Code == code)
+        if (_suppress || value is null || (string)value.Value == T.Code)
         {
             return;
         }
 
-        _settings.Language = code;
+        _settings.Language = (string)value.Value;
         ScheduleSave();
-        T = Strings.For(code);
-        OnPropertyChanged(nameof(IsRussian));
-        OnPropertyChanged(nameof(IsEnglish));
+        T = Strings.For(_settings.Language);
         Localize();
     }
 
