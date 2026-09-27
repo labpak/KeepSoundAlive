@@ -1,0 +1,153 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:KeepSoundAlive.ViewModels"
+        mc:Ignorable="d"
+        x:Class="KeepSoundAlive.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="KeepSoundAlive"
+        Icon="/Assets/icon.png"
+        Width="460" MinWidth="380" SizeToContent="Height"
+        WindowStartupLocation="CenterScreen">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.header">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Opacity" Value="0.7" />
+      <Setter Property="Margin" Value="2,0,0,6" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="14" />
+      <Setter Property="Margin" Value="0,0,0,16" />
+    </Style>
+    <Style Selector="RadioButton.segment">
+      <Setter Property="MinWidth" Value="40" />
+      <Setter Property="Padding" Value="10,4" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+  </Window.Styles>
+
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="20,18,20,12">
+
+      <!-- Header -->
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,16">
+        <Image Source="/Assets/icon.png" Width="36" Height="36" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Margin="12,0" Text="KeepSoundAlive" FontSize="20" FontWeight="SemiBold"
+                   VerticalAlignment="Center" />
+        <Border Grid.Column="2" CornerRadius="6" ClipToBounds="True" VerticalAlignment="Center"
+                BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}">
+          <StackPanel Orientation="Horizontal">
+            <RadioButton Classes="segment" Theme="{StaticResource {x:Type ToggleButton}}" GroupName="language"
+                         Content="RU" IsChecked="{Binding IsRussian}" />
+            <RadioButton Classes="segment" Theme="{StaticResource {x:Type ToggleButton}}" GroupName="language"
+                         Content="EN" IsChecked="{Binding IsEnglish}" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- Status + main switch -->
+      <Border Classes="card">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Ellipse Width="12" Height="12" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Margin="10,0" Text="{Binding StatusText}" TextWrapping="Wrap"
+                     VerticalAlignment="Center" />
+          <!-- The negative margin eats the space ToggleSwitch reserves for its (unused) On/Off text. -->
+          <ToggleSwitch Grid.Column="2" IsChecked="{Binding Enabled}" OnContent="{x:Null}" OffContent="{x:Null}" Margin="0,0,-10,0"
+                        MinWidth="0" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+
+      <!-- Device -->
+      <TextBlock Classes="header" Text="{Binding T.DeviceHeader}" />
+      <Border Classes="card">
+        <Grid ColumnDefinitions="*,Auto">
+          <ComboBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice}"
+                    HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:DeviceItem">
+                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Grid.Column="1" Margin="8,0,0,0" Content="⟳" FontSize="16" Padding="10,4"
+                  Command="{Binding RefreshDevicesCommand}" ToolTip.Tip="{Binding T.Refresh}" />
+        </Grid>
+      </Border>
+
+      <!-- Signal -->
+      <TextBlock Classes="header" Text="{Binding T.SignalHeader}" />
+      <Border Classes="card">
+        <StackPanel Spacing="12">
+          <ComboBox ItemsSource="{Binding Modes}" SelectedItem="{Binding SelectedMode}" HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:OptionItem">
+                <TextBlock Text="{Binding Name}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+
+          <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsInfrasound}">
+            <TextBlock Text="{Binding T.Frequency}" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Column="1" Width="150" Value="{Binding InfrasoundHz}" Increment="1"
+                           Minimum="{Binding InfrasoundMinimum}" Maximum="{Binding InfrasoundMaximum}"
+                           FormatString="0" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsUltrasound}">
+            <TextBlock Text="{Binding T.Frequency}" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Column="1" Width="150" Value="{Binding UltrasoundHz}" Increment="500"
+                           Minimum="{Binding UltrasoundMinimum}" Maximum="{Binding UltrasoundMaximum}"
+                           FormatString="0" />
+          </Grid>
+
+          <StackPanel IsVisible="{Binding IsLevelVisible}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding T.Level}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding LevelText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Grid>
+            <Slider Minimum="{Binding LevelMinimum}" Maximum="{Binding LevelMaximum}" Value="{Binding LevelDb}"
+                    TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="5" />
+          </StackPanel>
+
+          <Button Content="{Binding T.ResetSignal}" Command="{Binding ResetSignalCommand}" />
+        </StackPanel>
+      </Border>
+
+      <!-- Settings -->
+      <TextBlock Classes="header" Text="{Binding T.SettingsHeader}" />
+      <Border Classes="card">
+        <StackPanel Spacing="6">
+          <CheckBox IsChecked="{Binding StartWithSystem}" Content="{Binding T.StartWithSystem}" />
+          <CheckBox IsChecked="{Binding ShowInMenu}" IsVisible="{Binding IsMenuEntrySupported}"
+                    Content="{Binding T.ShowInMenu}" />
+          <CheckBox IsChecked="{Binding CloseToTray}" Content="{Binding T.CloseToTray}" />
+          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsIdlePauseSupported}">
+            <CheckBox IsChecked="{Binding PauseWhenIdle}" Content="{Binding T.PauseWhenIdle}" />
+            <NumericUpDown Value="{Binding IdleMinutes}" Minimum="1" Maximum="240" Increment="1" Width="120"
+                           FormatString="0" IsEnabled="{Binding PauseWhenIdle}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding T.Minutes}" VerticalAlignment="Center" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Footer -->
+      <Grid ColumnDefinitions="*,Auto" Opacity="0.6">
+        <TextBlock VerticalAlignment="Center" FontSize="12">
+          <Run Text="{Binding Version}" />
+          <Run Text="·" />
+          <Run Text="{Binding BackendName}" />
+        </TextBlock>
+        <HyperlinkButton Grid.Column="1" Content="GitHub" NavigateUri="{Binding RepositoryUrl}" FontSize="12" />
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</Window>
